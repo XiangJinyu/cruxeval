@@ -11,6 +11,9 @@ from openai_prompt import (
     batch_prompt_cot_output,
 )
 
+os.environ["OPENAI_API_KEY"] = ""
+os.environ["OPENAI_API_BASE"] = "https://oneapi.deepwisdom.ai/v1"
+
 def run_openai(model, mode, cot, temperature):
     dataset = [json.loads(l) for l in open("../data/cruxeval.jsonl", "r").readlines()]
 
@@ -32,7 +35,7 @@ def run_openai(model, mode, cot, temperature):
     outputs = fn(
         prompts,
         temperature=temperature,
-        n=10,
+        n=1,
         model=model,
         max_tokens=max_tokens,
         stop=["[/ANSWER]"],
@@ -52,10 +55,11 @@ def get_save_dir(mode, model, cot, temperature):
     return os.path.join(base_dir, "generations.json")
         
 if __name__ == "__main__":
-    models = ["gpt-3.5-turbo-0613", "gpt-4-0613"]
-    modes = ["input", "output"]
-    cots = [False, True]
-    temperatures = [0.2, 0.8]
+
+    models = ["gpt-3.5-turbo"]
+    modes = ["output"]
+    cots = [True]
+    temperatures = [0.2]
     for model, mode, cot, temperature in product(models, modes, cots, temperatures):
         run_openai(model, mode, cot, temperature)
         break # comment out to run the whole thing $$

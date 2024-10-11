@@ -10,7 +10,7 @@ from utils_general import (
 
 def evaluate_generations(generations : dict[str, list], mode):
     # Load the samples
-    dataset = [json.loads(l) for l in open("../data/cruxeval.jsonl", "r").readlines()]
+    dataset = [json.loads(l) for l in open("D:\PythonProject\cruxeval\data\cruxeval.jsonl", "r").readlines()]
     references = [(doc["code"], doc["input"], doc["output"]) for doc in dataset]
 
     # Run the samples
@@ -44,18 +44,19 @@ if __name__ == "__main__":
               length 800, where each element is a list of different generations \
               for that benchmark sample.",
         type=str,
+        default="D:\PythonProject\cruxeval\model_generations\gpt-3.5-turbo+cot_temp0.2_output\generations.json"
     )
     parser.add_argument(
         "--scored_results_path", 
         help="path to dump scored results",
         type=str,
-        default=None,
+        default="D:\PythonProject\cruxeval\evaluation\evaluation_results.json",
     )
     parser.add_argument(
         "--mode", 
         help="either input or output, depending on which one to evaluate",
         type=str,
-        default=None,
+        default="output",
     )
 
     args = parser.parse_args()

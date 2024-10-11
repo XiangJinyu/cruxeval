@@ -15,8 +15,13 @@ from prompts import (
     make_cot_input_prompt,
 )
 
+os.environ["OPENAI_API_KEY"] = ""
+os.environ["OPENAI_API_BASE"] = "https://oneapi.deepwisdom.ai/v1"
+
+
 client = OpenAI(
     api_key=os.environ.get("OPENAI_API_KEY"),
+    base_url=os.environ.get("OPENAI_API_BASE"),
 )
 
 def extract_answer_direct_output(gen):
@@ -66,11 +71,16 @@ def call_openai_api(system_prompt, prompt, temperature, n, model, max_tokens, st
                 n=n,
                 max_tokens=max_tokens,
                 stop=stop
+
             )
             break
-        except:
-            import time; time.sleep(10); pass
+        except Exception as e:
+            print(f"Error occurred: {str(e)}")
+            import time; time.sleep(10)  # 等待 10 秒后重试
+            pass
+
     return [result.choices[i].message.content for i in range(n)]
+
 
 def prompt_openai_general(make_prompt_fn, i, cache, gpt_query, temperature, n, model, max_tokens, stop) -> tuple[str, list[str]]:
     x = random.randint(1, 1000)
@@ -96,6 +106,10 @@ def prompt_openai_general(make_prompt_fn, i, cache, gpt_query, temperature, n, m
         pass
     return i, (cache_key, result)
 
+
+from tqdm import tqdm  # 导入 tqdm
+
+
 def batch_prompt(fn, extraction_fn, queries, temperature, n, model, max_tokens, stop):
     # load the cache
     CACHE_DIR_PREFIX = ""
@@ -109,12 +123,16 @@ def batch_prompt(fn, extraction_fn, queries, temperature, n, model, max_tokens, 
         cache = {}
 
     # run the generations
-    with ThreadPoolExecutor(max_workers=50) as executor:
+    with ThreadPoolExecutor(max_workers=10) as executor:
+        # 使用 tqdm 包装 futures 以显示进度
         futures = [
-            executor.submit(fn, i, cache, query, temperature, n, model, max_tokens, stop) 
+            executor.submit(fn, i, cache, query, temperature, n, model, max_tokens, stop)
             for i, query in enumerate(queries)
         ]
-        results_with_id = [future.result() for future in futures]
+        results_with_id = []
+        for future in tqdm(futures, desc="Processing queries"):
+            results_with_id.append(future.result())
+
     results_with_id.sort()
     results = [i[1] for i in results_with_id]
 
@@ -129,6 +147,7 @@ def batch_prompt(fn, extraction_fn, queries, temperature, n, model, max_tokens, 
     # parse the output
     gens = [i[1] for i in results]
     return [[(extraction_fn(i), i) for i in r] for r in gens]
+
 
 # direct output prompt
 def prompt_direct_output(i, cache, gpt_query, temperature, n, model, max_tokens, stop):
